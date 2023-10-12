@@ -37,7 +37,7 @@ library(lterdatasampler)
 options(scipen = 999) # disable scientific notation
 
 # Set your file path here! Or, set this up as an .Rproj if you'd like.
-rootdir <- ("~/Dropbox/Teaching/UCSB/EDS_222/EDS222_data")
+#rootdir <- ("~/Dropbox/Teaching/UCSB/EDS_222/EDS222_data")
 
 # For labs, we want to see all our code
 knitr::opts_chunk$set(echo = TRUE)
@@ -59,35 +59,57 @@ The `pie_crab` data sample can be called directly once you've loaded the `lterda
 2.  Discuss whether these two variables appear correlated, what sign you anticipate the correlation to be, and the strength of the correlation you expect.
 
 ```{r}
-
+summary(pie_crab)
 ```
+
+```{r}
+ggplot(data = pie_crab) +
+  geom_point(aes(x = latitude,
+                 y = size),
+             col = "seagreen") +
+  labs(x = "Latitude",
+       y = "Size of crab carapace (mm)") + 
+  theme_bw()
+
+ggplot(data = pie_crab) +
+  geom_point(aes(x = latitude,
+                 y = water_temp),
+             col = "seagreen") +
+  labs(x = "Latitude",
+       y = "Water temperature (Celsius)") + 
+  theme_bw()
+```
+from key:
+**Since many crab samples were taken at each site, we see many data points for each latitude. It looks like crab size and latitude are somewhat positively correlated, with a lot of noise. Water temperature and latitude are negatively correlated and the relationship appears stronger. Generally, crab size increases as latitude increases, following Bergmann's rule.**
 
 # Section 2: Calculating Correlations
 
-Visualizing values of the correlation between two quantities from their scatter plot can be very difficult. Research has shown that people's perception of the strength of these relationships can be influenced by design choices like the size of the graph and the aspect ratio,[^2] among other features. Hence, to more objectively report the relationship between two variables, we use correlation, computing the "correlation coefficient" $r$.[^3] Here, we will compute correlation coefficients for the two relationships plotted above.
+Visualizing values of the correlation between two quantities from their scatter plot can be very difficult. Research has shown that people's perception of the strength of these relationships can be influenced by design choices like the size of the graph and the aspect ratio,[^1] among other features. Hence, to more objectively report the relationship between two variables, we use correlation, computing the "correlation coefficient" $r$.[^2] Here, we will compute correlation coefficients for the two relationships plotted above.
 
-[^2]: The *aspect ratio* is the ratio of the width to the height of a figure or image.
+[^1]: The *aspect ratio* is the ratio of the width to the height of a figure or image.
 
-[^3]: Note: we just called this "correlation" in lecture, but people use "correlation" and "correlation coefficient" interchangeably. In most cases, this refers to the Pearson's correlation coefficient, as defined in lecture. There are other forms of correlation that are less common, such as rank correlation, but we won't use them in this class.
+[^2]: Note: we just called this "correlation" in lecture, but people use "correlation" and "correlation coefficient" interchangeably. In most cases, this refers to the Pearson's correlation coefficient, as defined in lecture. There are other forms of correlation that are less common, such as rank correlation, but we won't use them in this class.
 
 **Exercise:**
 
 1.  Use the plots from section 1 to write your best estimate of the correlation coefficient between each of the two examples in section 1.
 
+```{=html}
 <!-- -->
+```
+(i) the size of crab and latitude: 0.5
+(ii) water temperature and latitude: -0.9
 
-(i) the size of crab and latitude:
-(ii) water temperature and latitude:
-
+```{=html}
 <!-- -->
-
+```
 2.  Use the `cor()` function in `R` to calculate the correlation coefficient between the two variables in (i) and the two in (ii). How close was your guess to the true answer?
 
-```{r}
-
-```
-
 ```{r, fig.margin=TRUE}
+
+print(pie_crab |> summarize(crab_lat = cor(size, latitude))) # 0.59
+
+print(pie_crab |> summarize(temp_lat = cor(water_temp, latitude))) #-0.957
 
 ```
 
@@ -113,22 +135,46 @@ $$\text{crab size} = \beta_0 + \beta_1 \text{latitude} + \epsilon$$
 3.  Is your estimate of $\beta_0$ directly interpretable? What might you be concerned about when interpreting $\beta_0$?
 
 ```{r}
+lm(size ~ latitude, data = pie_crab)
 
 ```
+
+```{r}
+lm(size ~ latitude, data = pie_crab) %>% tidy %>% gt()
+# old pipe operator does not work for this :)
+
+```
+
+```{r}
+summary(lm(size ~ latitude, data = pie_crab))
+```
+
+**The coefficient on latitude tells us that for each degree increase in latitude, we expect crab size to increase by 0.49mm on average.**
+
+**The intercept estimate tells us that on average, crabs living on the equator, i.e. at latitude=0, have a size of -3.62mm. Note that this doesn't make sense! Do these crabs even live at the equator? This is a case where you want to be careful about extrapolating. $\hat\beta_0$ is helping us fit the data well *in the range of our sample*, but you shouldn't go making predictions about crabs in the equatorial region using this model estimated from the Atlantic coast of the US.**
 
 **Exercises, continued**
 
 4.  Does your model suggest anything about the relationship between crab size and water temperature? Is this evidence that water temperature is driving the Bergmann's rule (i.e. the colder climate is causing the selection of larger organisms)?
 
-> "Bergmann originally hypothesized that the organisms he studied, birds, were larger in the colder, higher latitudes due to heat-conservation. But the heat-conservation hypothesis relies on internal regulation of body temperature and therefore does not apply to ectotherms,[^1] some of which also follow Bergmann's rule. There is likely no universal mechanism underpinning Bergmann's rule, regardless of [ecto- or endothermy](https://www.khanacademy.org/science/ap-biology/ecology-ap/energy-flow-through-ecosystems/a/endotherms-ectotherms). As a result, other mechanisms have been proposed to explain Bergmann's rule, including the starvation-resistant hypothesis, the diet-quality hypothesis, the enemy hypothesis, the resource rule, seasonality hypothesis, and the temperature--size rule (Johnson et al., 2019)."
+from key:
+**Because crab size is increasing in latitude and water temperature is decreasing in latitude in the sample region, we can infer that as water temperature decreases, crab size increases. This is a statistical correlation we could estimate, but it is not causal evidence. You might think that colder water temperature is selecting for larger organisms by favoring larger bodies as they have lower surface-area-to-volume ratio (the heat conservation hypothesis), suggesting a causal link. However, for this hypothesis to be true, we should not see this relationship in "cold-blooded" animals, but many of them also follow this relationship.**
 
-[^1]: Commonly referred to as "cold-blooded animals", ectotherms are animal that depends on external sources of body heat; such as fishes, amphibians, reptiles, and invertebrates.
+
+
+> "Bergmann originally hypothesized that the organisms he studied, birds, were larger in the colder, higher latitudes due to heat-conservation. But the heat-conservation hypothesis relies on internal regulation of body temperature and therefore does not apply to ectotherms,[^3] some of which also follow Bergmann's rule. There is likely no universal mechanism underpinning Bergmann's rule, regardless of [ecto- or endothermy](https://www.khanacademy.org/science/ap-biology/ecology-ap/energy-flow-through-ecosystems/a/endotherms-ectotherms). As a result, other mechanisms have been proposed to explain Bergmann's rule, including the starvation-resistant hypothesis, the diet-quality hypothesis, the enemy hypothesis, the resource rule, seasonality hypothesis, and the temperature--size rule (Johnson et al., 2019)."
+
+[^3]: Commonly referred to as "cold-blooded animals", ectotherms are animal that depends on external sources of body heat; such as fishes, amphibians, reptiles, and invertebrates.
 
 5.  [If we have time] Repeat the above steps for the relationship between latitude and water temperature.
-
+**Here are analogous results for the relationship between latitude and water temperature:**
 ```{r}
 
+summary(lm(water_temp ~ latitude, data = pie_crab))
+
 ```
+**For each additional degree increase in latitude, we expect water temperature to fall by 0.77 degrees Celsius on average.**
+
 
 ## Visualize Regression [if we have time]
 
@@ -139,10 +185,26 @@ Here, we visualize our simple linear regression models above using the scatter p
 Use the `geom_smooth()` function with method argument set to `lm`, which stands for "linear model", to add the best fit OLS line to your scatter plots from Section 1. Use the option `se = FALSE` to turn off estimates of uncertainty. Don't worry, we'll dig into those soon.
 
 ```{r}
+# (i) latitude is associated with the size of crabs:
+
+ggplot(data = pie_crab, aes(x = latitude, y = size)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(x = "Latitude", 
+       y = "Size of crab carapace (mm)") + 
+  theme_bw()
+
 
 ```
 
 ```{r}
+# (ii) latitude is associated with water temperature:
+ggplot(data = pie_crab, aes(y = water_temp, x = latitude)) +
+  geom_point() + 
+  geom_smooth(method = "lm", formula= y~x, se=FALSE) +  # set standard errors to false
+  labs(x = "Latitude",
+       y = "Water temperature (Celsius)") + 
+  theme_bw()
 
 ```
 
@@ -161,14 +223,55 @@ Using the regression of crab size on latitude:
 [^4]: **Hint:** In `dplyr` you can use `add_predictions(mod)` where `mod` is a regression model to generate a new variable containing your model's predicted values.
 
 ```{r}
+# regression
+model_1 <- lm(size ~ latitude, data = pie_crab)
+
+# create predictions and residuals
+predictions <- pie_crab %>% add_predictions(model_1) %>% # adds a column "pred" (y-hats)
+  mutate(residuals = size-pred)
+
+# take a look to understand what just happened
+head(predictions)
 
 ```
+
+```{r}
+# regression
+model_2 <- lm(size ~ water_temp, data = pie_crab)
+
+# create predictions and residuals
+predictions_2 <- pie_crab %>% add_predictions(model_2) %>% # adds a column "pred" (y-hats)
+  mutate(residuals = size-pred)
+
+# take a look to understand what just happened
+head(predictions_2)
+```
+
 
 2.  Make a histogram of your residuals. Do they look approximately normally distributed?
 
 ```{r}
 
+ggplot(data = predictions) +
+  geom_histogram(aes(x = residuals), 
+                 bins = 25,
+                 col = "black",
+                 fill = "seagreen")
+
 ```
+```{r}
+ggplot(data = predictions_2) +
+  geom_histogram(aes(x = residuals), 
+                 bins = 25,
+                 col = "black",
+                 fill = "seagreen")
+```
+- normal
+- unimodal
+- pretty symmetric
+- doesn't really have tails
+- "pretty good"
+- next step:  Q-Q plot (compare our normal vs theoretical)
 
 
 3.  Compute the mean of your residuals. Is it basically zero?[^5]
@@ -176,13 +279,21 @@ Using the regression of crab size on latitude:
 [^5]: **Note:** OLS gives you this one for free. The OLS regression line will always go through the middle of your data, as it aims to minimize squared errors. So, you'll always end up with sample errors that are mean zero. This doesn't necessarily mean that in your population $u$ is mean zero!
 
 ```{r}
-
+mean(predictions$residuals)
 ```
 
 4.  Plot residuals against your independent variable, latitude. Does the variance look approximately constant across all values of latitude?
 
 ```{r}
-
+ggplot(predictions) + 
+  geom_point(aes(x = latitude,
+                 y = residuals)) + 
+  theme_bw()
 ```
+- looks pretty good, might want to do some additional checking but it looks okay
+- don't want to see cloud of variance points at one end of the plot
+- don't want heteroskedasticity 
 
+notes from key:
+**Roughly, yes. Doesn't look like there's a systematic increase or decrease in variance, except maybe at the higher end of the latitude distribution. Overall, this looks like pretty strong evidence to support the assumption that the population error is normally distributed, mean zero, and constant variance. Since we are using our sample to justify assumptions we need to make about the population, we can never be fully confident. But this is the best we can do without a census!**
 
